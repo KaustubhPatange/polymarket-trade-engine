@@ -11,6 +11,13 @@ If you are not familiar with terms like order books, bids, asks, or how predicti
 
 The story is quite interesting, though it might feel tedious to those who simply want to use the engine. If you’re curious about how I discovered prediction markets and Polymarket, and what led me to build this engine, you can read more in [MOTIVATION.md](docs/MOTIVATION.md).
 
+
+#### Why TypeScript?
+
+Writing a trading engine in TypeScript or Python may make the project seem less serious, but that is not true. The real reason is that it does not matter much in this context. 5-minute markets have thin liquidity. At any given moment, the market typically contains <= 150k USDC worth of token liquidity on either side, compared to markets like Forex or stocks, which have trillions of dollars in liquidity. Additionally, all interactions happen through standard APIs over a CLOB, not via low-latency protocols like FIX.
+
+While faster computation can be an advantage, it does not provide meaningful benefits in markets where order book activity itself is not extremely fast. In such cases, TypeScript and Python are still perfectly valid choices. I am most familiar with TypeScript, but there is no reason to assume the engine is slow simply because it uses an interpreted language.
+
 ### License
 
 MIT

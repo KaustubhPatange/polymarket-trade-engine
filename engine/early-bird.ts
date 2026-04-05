@@ -253,6 +253,7 @@ export class EarlyBird {
     if (this._shuttingDown && this._lifecycles.size === 0) {
       log.write("[shutdown] All settled. Exiting.", "dim");
       this._saveState();
+      this._ticker.destroy();
       process.exit(0);
     }
   }
@@ -260,7 +261,6 @@ export class EarlyBird {
   private _startShutdown(reason: string): void {
     if (this._shuttingDown) return;
     this._shuttingDown = true;
-    this._ticker.destroy();
     log.write(`[shutdown] ${reason}`, "yellow");
     log.write("[shutdown] Signalling all lifecycles to cancel.", "yellow");
 
