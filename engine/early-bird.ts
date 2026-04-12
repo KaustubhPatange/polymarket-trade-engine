@@ -228,21 +228,6 @@ export class EarlyBird {
       }
     }
 
-    // Check slot-end timeout for active stopping lifecycles
-    if (!this._shuttingDown) {
-      const nowMs = Date.now();
-      for (const [slug, lifecycle] of this._lifecycles) {
-        if (lifecycle.state === "STOPPING") {
-          if (nowMs > lifecycle.slotEndMs) {
-            this._startShutdown(
-              `Lifecycle ${slug} still STOPPING past slot end.`,
-            );
-            break;
-          }
-        }
-      }
-    }
-
     // Throttled state persistence (every 5s)
     if (Date.now() - this._lastSaveMs >= SAVE_INTERVAL_MS) {
       this._saveState();

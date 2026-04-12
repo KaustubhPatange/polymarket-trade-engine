@@ -16,8 +16,6 @@
     "@ethersproject/wallet": "^5.8.0",
     "@js-sdsl/ordered-map": "^4.4.2",
     "@polymarket/clob-client": "^5.8.1",
-    "commander": "^14.0.3",
-    "ethers": "^6.16.0",
-    "viem": "^2.47.6"
+    "commander": "^14.0.3"
   }
 }

@@ -432,7 +432,7 @@ export class MarketLifecycle {
       }
 
       if (order.status === "filled") {
-        const grossShares = order.actualShares;
+        const grossShares = order.actualShares > 0 ? order.actualShares : order.shares;
         let fee = 0;
         if (pending.orderType === "FOK" && this._feeRate > 0) {
           // Taker fee: fee = C × feeRate × p × (1 - p)

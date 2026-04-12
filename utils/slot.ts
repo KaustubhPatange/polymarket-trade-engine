@@ -1,6 +1,6 @@
 import { Env, type MarketWindow } from "./config.ts";
 
-export const INTERVAL_MAP: Record<MarketWindow, number> = {
+const INTERVAL_MAP: Record<MarketWindow, number> = {
   "5m": 300,
   "15m": 900,
 };

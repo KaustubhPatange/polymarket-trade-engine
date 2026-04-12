@@ -158,7 +158,7 @@ INIT --> RUNNING --> STOPPING --> DONE
 **STOPPING**
 
 1. Cancels any remaining buy orders.
-2. Waits for pending sell orders to fill.
+2. Continues processing pending sell orders each tick — fill and expiry callbacks (`onFilled`, `onExpired`) still fire normally during this phase.
 3. If the slot expires with unfilled sells, cancels them.
 4. Computes PnL based on order history and market resolution.
 5. Transitions to DONE.
@@ -365,7 +365,9 @@ Live BTC price tracker aggregating data from multiple sources.
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `price` | `number \| undefined` | Current BTC price. `undefined` if not yet available. |
+| `price` | `number \| undefined` | Current BTC price aggregated across all configured sources. `undefined` if not yet available. |
+| `binancePrice` | `number \| undefined` | Raw BTC price from Binance. `undefined` if Binance is not configured or not yet ready. |
+| `coinbasePrice` | `number \| undefined` | Raw BTC price from Coinbase. `undefined` if Coinbase is not configured or not yet ready. |
 | `divergence` | `number \| null` | Price divergence across configured sources. |
 
 ### PendingOrder
@@ -709,6 +711,7 @@ bun run scripts/orderbook.ts --continuous
 | Flag | Description |
 |------|-------------|
 | `--market <n>` | Market slot offset or timestamp. `0` = current, `1` = next, `-1` = previous. You can also pass a Unix timestamp from a slug (e.g. `--market 1775301600`). Defaults to current. |
+| `--window <w>` | Market window duration. `5m` (default) or `15m`. Sets the `MARKET_WINDOW` environment variable for the script. |
 | `--continuous` | Follow new slots automatically as they open. Without this flag, the monitor locks to the slot resolved at startup and stays there. |
 
 This is significantly faster than viewing the order book on the Polymarket website. The website introduces rendering lag, CDN caching, and client-side polling delays that can add 1-3 seconds of latency on top of the underlying data feed. The terminal monitor connects directly to the same WebSocket the engine uses, giving you the exact same view of the book that your strategy sees in real time. This is especially useful for verifying that your strategy's entry and exit prices align with what the book actually looks like at the moment of execution.
