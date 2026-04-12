@@ -2,6 +2,10 @@
 // Enable all three BTC price sources for this script
 process.env["BTC_TICKER"] = "polymarket,binance,coinbase";
 
+const windowArgIdx = process.argv.indexOf("--window");
+const windowArgVal = windowArgIdx !== -1 ? process.argv[windowArgIdx + 1] : "5m";
+process.env["MARKET_WINDOW"] = windowArgVal;
+
 import { APIQueue } from "../tracker/api-queue";
 import { OrderBook } from "../tracker/orderbook";
 import { TickerTracker } from "../tracker/ticker";

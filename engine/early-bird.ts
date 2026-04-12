@@ -235,7 +235,7 @@ export class EarlyBird {
         if (lifecycle.state === "STOPPING") {
           if (nowMs > lifecycle.slotEndMs) {
             this._startShutdown(
-              `SELL order for ${slug} didn't fill by slot end.`,
+              `Lifecycle ${slug} still STOPPING past slot end.`,
             );
             break;
           }

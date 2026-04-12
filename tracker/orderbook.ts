@@ -77,14 +77,6 @@ export class OrderBook {
     }
   }
 
-  get ASSET_YES() {
-    return this.assetIds[0];
-  }
-
-  get ASSET_NO() {
-    return this.assetIds[1];
-  }
-
   private sendSubscription() {
     this.ws?.send(
       JSON.stringify({

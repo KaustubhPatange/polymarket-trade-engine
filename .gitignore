@@ -36,3 +36,4 @@ loss/*.html
 
 # strategy state
 state/
+test.ts

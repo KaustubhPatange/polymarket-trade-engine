@@ -107,6 +107,7 @@ async function recoverMarket(
         price: order.price,
         shares: order.shares,
         expireAtMs: order.expireAtMs,
+        placedAtMs: 0, // already confirmed live — bypass CLOB indexing grace period
         // No callbacks — recovered markets run in drain mode
       });
     }

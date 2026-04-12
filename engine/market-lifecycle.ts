@@ -23,6 +23,7 @@ export type PendingOrder = {
   price: number;
   shares: number;
   expireAtMs: number;
+  placedAtMs: number;
   onFilled?: (filledShares: number) => void;
   onExpired?: () => void | Promise<void>;
   onFailed?: (reason: string) => void | Promise<void>;
@@ -68,7 +69,7 @@ export class MarketLifecycle {
   private _orderBook = new OrderBook();
 
   private _clobTokenIds: [string, string] | null = null;
-  private _conditionId: string | null = null;
+
   private _feeRate = 0;
   private _pendingOrders: PendingOrder[] = [];
   private _orderHistory: CompletedOrder[] = [];
@@ -180,7 +181,7 @@ export class MarketLifecycle {
   }
 
   destroy(): void {
-    if (Math.abs(this._pnl) > 0 || this._alwaysLog) {
+    if (this._orderHistory.length > 0 || this._alwaysLog) {
       this._marketLogger.endSlot(this.slug);
     }
     this._marketLogger.destroy();
@@ -228,7 +229,7 @@ export class MarketLifecycle {
 
     const tokenIds: string[] = JSON.parse(market.clobTokenIds);
     this._clobTokenIds = [tokenIds[0]!, tokenIds[1]!];
-    this._conditionId = market.conditionId;
+
     this._feeRate = market.feeSchedule?.rate ?? 0;
 
     const slot = slotFromSlug(this.slug);
@@ -384,23 +385,24 @@ export class MarketLifecycle {
     // Snapshot the list — callbacks may mutate _pendingOrders
     const snapshot = [...this._pendingOrders];
 
-    // One call to get all currently live order IDs for this market
-    const openIds = await this.client.getOpenOrderIds(this._conditionId ?? "");
-
-    // Only fetch full status for orders that left the book (filled or cancelled)
-    const gone = snapshot.filter((p) => !openIds.has(p.orderId));
-    const goneStatuses = await Promise.all(
-      gone.map((p) => this.client.getOrderById(p.orderId)),
+    // Fetch full status for every pending order directly.
+    // This correctly handles immediate fills (order filled before appearing in open
+    // order list) as well as cancelled orders, without relying on getOpenOrderIds.
+    const CLOB_INDEX_GRACE_MS = 5000;
+    const statuses = await Promise.all(
+      snapshot.map((p) => this.client.getOrderById(p.orderId)),
     );
     const statusMap = new Map<string, Order | null>(
-      gone.map((p, i) => [p.orderId, goneStatuses[i]!]),
+      snapshot.map((p, i) => [p.orderId, statuses[i]!]),
     );
 
     for (const pending of snapshot) {
       // Skip if already removed by a prior callback in this tick
       if (!this._pendingOrders.includes(pending)) continue;
 
-      if (openIds.has(pending.orderId)) {
+      const order = statusMap.get(pending.orderId);
+
+      if (order?.status === "live") {
         // Still live — only check expiry
         if (Date.now() >= pending.expireAtMs) {
           await this._cancelOrders([pending.orderId]);
@@ -412,16 +414,18 @@ export class MarketLifecycle {
         continue;
       }
 
-      const order = statusMap.get(pending.orderId);
+      // null within grace period — CLOB may not have indexed the order yet
+      if (!order && Date.now() - pending.placedAtMs <= CLOB_INDEX_GRACE_MS)
+        continue;
 
       if (!order || order.status === "cancelled") {
+        const reason = order ? "cancelled" : "not found";
         this._removePendingOrder(pending.orderId);
         this._trackerUnlock(pending);
+        this._marketLogger.log(
+          this._createOrderEntry(pending, "failed", { reason }),
+        );
         if (pending.onFailed) {
-          const reason = order ? order.status : "not found";
-          this._marketLogger.log(
-            this._createOrderEntry(pending, "failed", { reason }),
-          );
           await pending.onFailed(reason);
         }
         continue;
@@ -712,6 +716,7 @@ export class MarketLifecycle {
             price: item.req.price,
             shares: item.req.shares,
             expireAtMs: item.expireAtMs,
+            placedAtMs: Date.now(),
             onFilled: item.onFilled,
             onExpired: item.onExpired,
             onFailed: item.onFailed,
