@@ -26,7 +26,7 @@ This document is the primary reference for developing strategies on the Polymark
 
 ## Overview
 
-The engine trades 5-minute binary prediction markets on Polymarket. Each market asks whether BTC will finish above or below a reference price (the "price to beat") at the end of a 5-minute window. The engine manages market discovery, order book subscriptions, order placement, fill tracking, and PnL accounting. Your job as a strategy author is to implement a single async function that decides what to buy, when to sell, and how to react to fills and expirations.
+The engine trades binary prediction markets on Polymarket. Each market asks whether a crypto asset (BTC, ETH, XRP, SOL, or DOGE) will finish above or below a reference price (the "price to beat") at the end of a 5-minute or 15-minute window. The engine manages market discovery, order book subscriptions, order placement, fill tracking, and PnL accounting. Your job as a strategy author is to implement a single async function that decides what to buy, when to sell, and how to react to fills and expirations.
 
 ---
 
@@ -87,7 +87,8 @@ When `--prod` is confirmed, `process.env.PROD` is set to `"true"` so that strate
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
-| `BTC_TICKER` | comma-separated list | `polymarket,coinbase` | Price sources for the BTC ticker. Valid values: `polymarket`, `binance`, `coinbase`. |
+| `TICKER` | comma-separated list | `polymarket,coinbase` | Price sources for the asset ticker. Valid values: `polymarket`, `binance`, `coinbase`. |
+| `MARKET_ASSET` | string | `"btc"` | Asset to trade. Valid values: `btc`, `eth`, `xrp`, `sol`, `doge`. |
 | `MARKET_WINDOW` | string | `"5m"` | Market window duration. `"5m"` for 5-minute markets, `"15m"` for 15-minute markets. Set before starting the engine -- cannot be changed while running. |
 | `PROD` | boolean string | `"false"` | Set automatically by `--prod`. Do not set manually. |
 | `PRIVATE_KEY` | string | `""` | Polygon wallet private key. Required for production mode. |
@@ -100,8 +101,9 @@ When `--prod` is confirmed, `process.env.PROD` is set to `"true"` so that strate
 
 ```ts
 type Config = {
-  BTC_TICKER: ("polymarket" | "binance" | "coinbase")[];
+  TICKER: ("polymarket" | "binance" | "coinbase")[];
   MARKET_WINDOW: "5m" | "15m";
+  MARKET_ASSET: "btc" | "eth" | "xrp" | "sol" | "doge";
   PROD: boolean;
   PRIVATE_KEY: string;
   POLY_FUNDER_ADDRESS: string;
@@ -181,14 +183,14 @@ Each market is a binary prediction market with two sides:
 
 | Side | Token Index | Resolves to 1.00 when |
 |------|-------------|----------------------|
-| UP | `clobTokenIds[0]` | BTC finishes above the price to beat |
-| DOWN | `clobTokenIds[1]` | BTC finishes below the price to beat |
+| UP | `clobTokenIds[0]` | Asset finishes above the price to beat |
+| DOWN | `clobTokenIds[1]` | Asset finishes below the price to beat |
 
 Prices range from `0.00` to `1.00`, representing the implied probability of that outcome.
 
-**Example:** You buy 100 shares of UP at `0.49` each (cost: $49.00). If BTC finishes above the price to beat, each share resolves to `1.00` and you receive $100.00 (profit: $51.00). If BTC finishes below, the shares resolve to `0.00` (loss: $49.00).
+**Example:** You buy 100 shares of UP at `0.49` each (cost: $49.00). If the asset finishes above the price to beat, each share resolves to `1.00` and you receive $100.00 (profit: $51.00). If it finishes below, the shares resolve to `0.00` (loss: $49.00).
 
-The market `slug` encodes the market type and slot end time. For example, `btc-updown-5m-1775241600` indicates a BTC up/down 5-minute market ending at Unix timestamp 1775241600.
+The market `slug` encodes the asset, market type, and slot end time. For example, `btc-updown-5m-1775241600` indicates a BTC up/down 5-minute market ending at Unix timestamp 1775241600. Change `MARKET_ASSET` to trade a different asset (e.g. `eth-updown-5m-1775241600` for ETH).
 
 ---
 
@@ -242,7 +244,7 @@ The `StrategyContext` object is the sole interface between your strategy and the
 | `log` | `(msg: string, color?: LogColor) => void` | Log messages to engine output. |
 | `pendingOrders` | `PendingOrder[]` | Live reference to the array of currently pending orders. |
 | `orderHistory` | `Array<{ action: "buy" \| "sell"; price: number; shares: number }>` | Array of completed (filled) orders. |
-| `ticker` | `TickerTracker` | Live BTC price tracker (see below). |
+| `ticker` | `TickerTracker` | Live asset price tracker (see below). |
 
 ### Methods
 
@@ -302,7 +304,7 @@ Permanently prevents further sell orders from being placed for this market round
 
 #### ctx.getMarketResult(): MarketData | undefined
 
-Returns `{ openPrice, closePrice }` when available. `openPrice` is the BTC price at market open (the "price to beat"). `closePrice` is set after market resolution. Returns `undefined` before market data is available.
+Returns `{ openPrice, closePrice }` when available. `openPrice` is the asset price at market open (the "price to beat"). `closePrice` is set after market resolution. Returns `undefined` before market data is available.
 
 ### OrderRequest
 
@@ -361,13 +363,13 @@ Live order book for the current market. Key methods:
 
 ### TickerTracker
 
-Live BTC price tracker aggregating data from multiple sources.
+Live asset price tracker aggregating data from multiple sources.
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `price` | `number \| undefined` | Current BTC price aggregated across all configured sources. `undefined` if not yet available. |
-| `binancePrice` | `number \| undefined` | Raw BTC price from Binance. `undefined` if Binance is not configured or not yet ready. |
-| `coinbasePrice` | `number \| undefined` | Raw BTC price from Coinbase. `undefined` if Coinbase is not configured or not yet ready. |
+| `price` | `number \| undefined` | Current asset price aggregated across all configured sources. `undefined` if not yet available. |
+| `binancePrice` | `number \| undefined` | Raw asset price from Binance. `undefined` if Binance is not configured or not yet ready. |
+| `coinbasePrice` | `number \| undefined` | Raw asset price from Coinbase. `undefined` if Coinbase is not configured or not yet ready. |
 | `divergence` | `number \| null` | Price divergence across configured sources. |
 
 ### PendingOrder
@@ -576,9 +578,12 @@ PRIVATE_KEY=0x...
 # your deposit transaction on Polygonscan.
 POLY_FUNDER_ADDRESS=0x...
 
-# BTC price sources. Comma-separated list of ticker providers.
+# Asset to trade. Options: btc, eth, xrp, sol, doge
+MARKET_ASSET=btc
+
+# Asset price sources. Comma-separated list of ticker providers.
 # Available: polymarket, binance, coinbase
-BTC_TICKER=polymarket,coinbase
+TICKER=polymarket,coinbase
 
 # Maximum cumulative session loss (in USD) before auto-shutdown.
 MAX_SESSION_LOSS=3
@@ -644,7 +649,7 @@ A structured NDJSON (newline-delimited JSON) log generated per market round. By 
 | `slot` | Start and end markers with slug, start time, and end time. |
 | `orderbook_snapshot` | Full order book state (top-of-book asks and bids for UP and DOWN). Written every 1 second. |
 | `remaining` | Seconds remaining in the market window. Paired with each snapshot. |
-| `btc_ticker` | BTC price from all configured sources and cross-source divergence. |
+| `ticker` | Asset price from all configured sources and cross-source divergence. |
 | `market_price` | The open price (price to beat) and current gap once the market window opens. |
 | `order` | Order events: `placed`, `filled`, `expired`, `failed`, `canceled`. Includes side, action, price, shares. |
 | `resolution` | Final market outcome: direction (UP/DOWN), open/close prices, unfilled shares, payout, and PnL. |
@@ -686,10 +691,10 @@ A header bar above the charts shows at-a-glance stats for the round:
   - Red: failed
 - Hovering over any point shows a tooltip with the full order book state and order details at that moment. Nearby orders within the same time window are grouped into a single tooltip.
 
-**BTC Price chart**
-- BTC price over time (blue line).
+**Asset Price chart**
+- Asset price over time (blue line).
 - Price to beat / open price (orange dashed line). This is the reference price the market resolves against.
-- Tooltip shows the current BTC price, price to beat, and gap at any point in time.
+- Tooltip shows the current asset price, price to beat, and gap at any point in time.
 
 The following screenshots are from the **simulation strategy** (`--strategy simulation`), showing what a winning and losing round look like in the chart. The order markers, price curves, and sub-charts are identical in structure for any strategy -- only the timing and placement logic differ.
 
@@ -702,16 +707,19 @@ The chart is useful for answering questions such as:
 - At what point did the strategy place its buy order? What was the order book state at that moment?
 - Did the ask/bid spread widen or narrow before the fill?
 - Was the stop-loss triggered by a genuine price reversal or a momentary spike?
-- How volatile was BTC in the seconds leading up to entry?
+- How volatile was the asset price in the seconds leading up to entry?
 - Did the market resolution match the gap direction at entry time?
 
 ### Live Order Book Monitor
 
-The `scripts/orderbook.ts` script connects to the Polymarket WebSocket and displays a real-time terminal view of the order book for the current or a specific market slot. It shows the UP and DOWN sides with ask/bid levels, BTC price from all configured sources, the price to beat, gap, and time remaining.
+The `scripts/orderbook.ts` script connects to the Polymarket WebSocket and displays a real-time terminal view of the order book for the current or a specific market slot. It shows the UP and DOWN sides with ask/bid levels, the asset price from all configured sources, the price to beat, gap, and time remaining.
 
 ```bash
-# Monitor the current market slot (locks to the slot at startup)
+# Monitor the current BTC market slot (locks to the slot at startup)
 bun run scripts/orderbook.ts
+
+# Monitor a different asset (e.g. ETH)
+bun run scripts/orderbook.ts --asset eth
 
 # Monitor a specific market offset (e.g. next slot)
 bun run scripts/orderbook.ts --market 1
@@ -722,6 +730,7 @@ bun run scripts/orderbook.ts --continuous
 
 | Flag | Description |
 |------|-------------|
+| `--asset <a>` | Asset to monitor. Valid values: `btc`, `eth`, `xrp`, `sol`, `doge`. Sets the `MARKET_ASSET` environment variable. Defaults to `btc`. |
 | `--market <n>` | Market slot offset or timestamp. `0` = current, `1` = next, `-1` = previous. You can also pass a Unix timestamp from a slug (e.g. `--market 1775301600`). Defaults to current. |
 | `--window <w>` | Market window duration. `5m` (default) or `15m`. Sets the `MARKET_WINDOW` environment variable for the script. |
 | `--continuous` | Follow new slots automatically as they open. Without this flag, the monitor locks to the slot resolved at startup and stays there. |

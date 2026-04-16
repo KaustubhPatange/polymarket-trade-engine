@@ -243,7 +243,7 @@ export class MarketLifecycle {
       this._orderBook.getSnapshotData(),
     );
     this._marketLogger.setTickerProvider(() => ({
-      btcPrice: this._ticker.price,
+      assetPrice: this._ticker.price,
       binancePrice: this._ticker.binancePrice,
       coinbasePrice: this._ticker.coinbasePrice,
       divergence: this._ticker.divergence,
@@ -251,9 +251,9 @@ export class MarketLifecycle {
     this._marketLogger.setMarketResultProvider(() => {
       const data = this.apiQueue.marketResult.get(slot.startTime);
       if (!data?.openPrice) return {};
-      const btcPrice = this._ticker.price;
-      const gap = btcPrice
-        ? parseFloat((btcPrice - data.openPrice).toFixed(2))
+      const assetPrice = this._ticker.price;
+      const gap = assetPrice
+        ? parseFloat((assetPrice - data.openPrice).toFixed(2))
         : undefined;
       return { openPrice: data.openPrice, gap, priceToBeat: data.openPrice };
     });

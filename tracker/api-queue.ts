@@ -1,4 +1,5 @@
 import { fetchWithRetry } from "../utils/fetch-retry";
+import { Env } from "../utils/config";
 import type { Slot } from "../utils/slot";
 
 export type MarketData = {
@@ -58,7 +59,7 @@ export class APIQueue {
     const controller = new AbortController();
 
     const url = new URL("https://polymarket.com/api/crypto/crypto-price");
-    url.searchParams.set("symbol", "BTC");
+    url.searchParams.set("symbol", Env.getAssetConfig().apiSymbol);
     url.searchParams.set("variant", "fiveminute");
     url.searchParams.set("eventStartTime", startTime.toString());
     url.searchParams.set("endDate", endTime.toString());

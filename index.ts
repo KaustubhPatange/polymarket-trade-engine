@@ -5,7 +5,9 @@ import { strategies, DEFAULT_STRATEGY } from "./engine/strategy/index.ts";
 import { acquireProcessLock } from "./utils/process-lock.ts";
 
 const program = new Command()
-  .description("Trade engine for Polymarket BTC Up/Down 5-minute markets")
+  .description(
+    "Automated trading engine for Polymarket binary prediction markets (e.g. BTC Up/Down 5-minute) ",
+  )
   .option(
     "-s, --strategy <name>",
     `Strategy to run (${Object.keys(strategies).join(", ")})`,

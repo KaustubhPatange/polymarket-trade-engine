@@ -1,16 +1,21 @@
 #!/usr/bin/env bun
-// Enable all three BTC price sources for this script
-process.env["BTC_TICKER"] = "polymarket,binance,coinbase";
+// Enable all three price sources for this script
+process.env["TICKER"] = "polymarket,binance,coinbase";
 
 const windowArgIdx = process.argv.indexOf("--window");
 const windowArgVal = windowArgIdx !== -1 ? process.argv[windowArgIdx + 1] : "5m";
 process.env["MARKET_WINDOW"] = windowArgVal;
 
+const assetArgIdx = process.argv.indexOf("--asset");
+const assetArgVal = assetArgIdx !== -1 ? process.argv[assetArgIdx + 1] : undefined;
+if (assetArgVal) process.env["MARKET_ASSET"] = assetArgVal;
+
 import { APIQueue } from "../tracker/api-queue";
 import { OrderBook } from "../tracker/orderbook";
 import { TickerTracker } from "../tracker/ticker";
 import { toIST } from "../utils/date";
-import { getSlotTS, getSlug, setMarketOffset } from "../utils/slot";
+import { getSlotTS, setMarketOffset } from "../utils/slot";
+import { Env } from "../utils/config";
 import { TerminalDisplay } from "../utils/terminal";
 import { BUY_AMOUNT } from "../utils/constants";
 
@@ -34,7 +39,8 @@ function subscribeSlot(slotTs: ReturnType<typeof getSlotTS>) {
   ticker.schedule();
   apiQueue.queueMarketPrice(slotTs);
   apiQueue.queueMarketPrice(getSlotTS(-1));
-  const slug = `btc-updown-5m-${slotTs.startTime / 1000}`;
+  const { slugPrefix } = Env.getAssetConfig();
+  const slug = `${slugPrefix}-updown-${Env.get("MARKET_WINDOW")}-${slotTs.startTime / 1000}`;
   apiQueue.queueEventDetails(slug).then(() => {
     const market = apiQueue.eventDetails.get(slug)?.markets[0];
     if (market) {
@@ -53,25 +59,27 @@ function loop() {
 
   const elapsed = Math.floor(Date.now() / 1000 - currentSlot.startTime / 1000);
   const remaining = 300 - elapsed;
-  const btcPrice = ticker.price;
+  const assetPrice = ticker.price;
   const priceToBeat = apiQueue.marketResult.get(currentSlot.startTime)?.openPrice;
   const gap =
-    btcPrice !== undefined && priceToBeat !== undefined
-      ? btcPrice - priceToBeat
+    assetPrice !== undefined && priceToBeat !== undefined
+      ? assetPrice - priceToBeat
       : null;
 
-  const btc = btcPrice ? "$" + btcPrice.toLocaleString() : "Waiting...";
+  const { slugPrefix: currentSlugPrefix } = Env.getAssetConfig();
+  const assetLabel = currentSlugPrefix.toUpperCase();
+  const priceStr = assetPrice ? "$" + assetPrice.toLocaleString() : "Waiting...";
   const ptb = priceToBeat ? "$" + priceToBeat.toLocaleString() : "Waiting...";
   const gapStr = gap !== null ? (gap >= 0 ? "+" : "") + gap.toFixed(0) : "--";
-  const btcLine = `BTC: ${btc}  |  To Beat: ${ptb}  |  Gap: ${gapStr}  |  ${remaining}s left`;
+  const priceLine = `${assetLabel}: ${priceStr}  |  To Beat: ${ptb}  |  Gap: ${gapStr}  |  ${remaining}s left`;
 
   const tickerLine = ticker.format();
 
-  const currentSlug = `btc-updown-5m-${currentSlot.startTime / 1000}`;
+  const currentSlug = `${currentSlugPrefix}-updown-${Env.get("MARKET_WINDOW")}-${currentSlot.startTime / 1000}`;
   display.update([
     `Slot: ${currentSlug}`,
     `Window: ${toIST(currentSlot.startTime)} → ${toIST(currentSlot.endTime)} IST`,
-    btcLine,
+    priceLine,
     ...(tickerLine ? [tickerLine] : []),
     "\r",
     ...orderBook.getDisplayLines(BUY_AMOUNT),

@@ -13,6 +13,7 @@ import {
 } from "./strategy/index.ts";
 import { WalletTracker } from "./wallet-tracker.ts";
 import { TickerTracker } from "../tracker/ticker";
+import { Env } from "../utils/config.ts";
 
 const SAVE_INTERVAL_MS = 5000;
 
@@ -78,7 +79,7 @@ export class EarlyBird {
     log.write("[startup] Starting");
     this._ticker.schedule();
     await this._ticker.waitForReady();
-    log.write("[startup] BTC ticker ready");
+    log.write(`[startup] ${Env.getAssetConfig().apiSymbol} ticker ready`);
 
     await this._client.init();
 

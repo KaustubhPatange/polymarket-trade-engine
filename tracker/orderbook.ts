@@ -1,5 +1,6 @@
 import { PriceLevelMap } from "../utils/price-level-map.ts";
 import { renderOrderBookTable } from "../utils/orderbook-table.ts";
+import { Env } from "../utils/config.ts";
 
 const WS_URL = "wss://ws-subscriptions-clob.polymarket.com/ws/market";
 
@@ -298,11 +299,12 @@ export class OrderBook {
 
   /** Order book depth table + net gain as an array of display lines */
   getDisplayLines(amount: number): string[] {
-    if (this.assetIds.length < 2) return ["Order book: Waiting..."];
+    const { apiSymbol } = Env.getAssetConfig();
+    if (this.assetIds.length < 2) return [`${apiSymbol} Order Book: Waiting...`];
 
     const upBook = this.books.get(this.assetIds[0]!);
     const downBook = this.books.get(this.assetIds[1]!);
-    if (!upBook || !downBook) return ["Order book: Waiting..."];
+    if (!upBook || !downBook) return [`${apiSymbol} Order Book: Waiting...`];
 
     const DEPTH = 5;
     const fmt = (v: number) => "$" + Math.round(v).toLocaleString();

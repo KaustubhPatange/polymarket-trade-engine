@@ -40,6 +40,7 @@ const slotEntry = entries.find(
 const startTime: number = slotEntry?.startTime ?? entries[0]?.ts ?? 0;
 const endTime: number = slotEntry?.endTime ?? 0;
 const slug: string = slotEntry?.slug ?? basename(logFile, ".log");
+const assetName = slug.split("-")[0]?.toUpperCase() ?? "BTC";
 const strategyName: string | null = slotEntry?.strategy ?? null;
 const totalDuration = endTime > startTime ? (endTime - startTime) / 1000 : 300;
 const allRemaining: number[] = [];
@@ -181,10 +182,10 @@ const xMax = allRemaining.length
   : totalDuration;
 const xMin = allRemaining.length ? Math.floor(Math.min(...allRemaining)) : 0;
 
-// ── BTC price data ────────────────────────────────────────────────────────────
+// ── Asset price data ──────────────────────────────────────────────────────────
 type BtcPoint = {
   remaining: number;
-  btcPrice: number;
+  assetPrice: number;
   gap?: number;
   priceToBeat?: number;
 };
@@ -205,13 +206,13 @@ for (const e of entries) {
       priceToBeat: e.priceToBeat,
     };
   } else if (
-    e.type === "btc_ticker" &&
+    e.type === "ticker" &&
     _lastRemaining !== null &&
-    e.btcPrice != null
+    e.assetPrice != null
   ) {
     btcPoints.push({
       remaining: _lastRemaining,
-      btcPrice: e.btcPrice,
+      assetPrice: e.assetPrice,
       gap: _lastMarketPrice?.gap,
       priceToBeat: _lastMarketPrice?.priceToBeat,
     });
@@ -230,10 +231,10 @@ const firstPtbPoint = dedupedBtcPoints.find((p) => p.priceToBeat != null) ?? nul
 
 const btcLineData = dedupedBtcPoints.map((p) => ({
   x: p.remaining,
-  y: p.btcPrice,
+  y: p.assetPrice,
   meta: {
     remaining: p.remaining,
-    btcPrice: p.btcPrice,
+    assetPrice: p.assetPrice,
     gap: p.gap,
     priceToBeat: p.priceToBeat,
   },
@@ -476,7 +477,7 @@ const html = `<!DOCTYPE html>
       data: {
         datasets: [
           {
-            label: "BTC Price",
+            label: "${assetName} Price",
             data: btcLineData,
             type: "line",
             borderColor: "#3b82f6",
@@ -520,7 +521,7 @@ const html = `<!DOCTYPE html>
               },
               label: (item) => {
                 const m = item.raw?.meta;
-                return m?.btcPrice != null ? \`BTC: $\${m.btcPrice.toLocaleString()}\` : "";
+                return m?.assetPrice != null ? \`${assetName}: $\${m.assetPrice.toLocaleString()}\` : "";
               },
               afterLabel: (item) => {
                 const m = item.raw?.meta;
@@ -541,7 +542,7 @@ const html = `<!DOCTYPE html>
             grid: { color: "#334155" },
           },
           y: {
-            title: { display: true, text: "BTC Price (USD)", color: "#64748b" },
+            title: { display: true, text: "${assetName} Price (USD)", color: "#64748b" },
             ticks: { color: "#64748b" },
             grid: { color: "#334155" },
           },

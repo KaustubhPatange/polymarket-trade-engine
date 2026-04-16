@@ -52,7 +52,7 @@ export class Logger {
   private _snapshotProvider: (() => object) | null = null;
   private _tickerProvider:
     | (() => {
-        btcPrice?: number;
+        assetPrice?: number;
         binancePrice?: number;
         coinbasePrice?: number;
         divergence?: number | null;
@@ -76,10 +76,10 @@ export class Logger {
     this._marketResultProvider = fn;
   }
 
-  /** Inject a BTC ticker provider — emits a btc_ticker entry alongside each snapshot. */
+  /** Inject an asset ticker provider — emits a ticker entry alongside each snapshot. */
   setTickerProvider(
     fn: () => {
-      btcPrice?: number;
+      assetPrice?: number;
       binancePrice?: number;
       coinbasePrice?: number;
       divergence?: number | null;
@@ -143,7 +143,7 @@ export class Logger {
     );
     this._append({ type: "remaining", seconds: remaining });
     if (this._tickerProvider) {
-      this._append({ type: "btc_ticker", ...this._tickerProvider() });
+      this._append({ type: "ticker", ...this._tickerProvider() });
     }
     if (this._marketResultProvider) {
       const data = this._marketResultProvider();
