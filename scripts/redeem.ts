@@ -30,10 +30,9 @@ const program = new Command()
   )
   .parse();
 
-const opts = program.opts<{ prod?: boolean; dryRun?: boolean }>();
+const opts = program.opts<{ dryRun?: boolean }>();
 
 const isDryRun = opts.dryRun ?? false;
-const shouldRedeem = !isDryRun;
 
 const proxyWallet = Env.get("POLY_FUNDER_ADDRESS");
 if (!proxyWallet) {
@@ -60,7 +59,7 @@ const markets = positions.filter((p) => {
 console.log(`Found ${markets.length} market(s) to redeem.\n`);
 
 let client: PolymarketEarlyBirdClient | null = null;
-if (shouldRedeem) {
+if (!isDryRun) {
   client = new PolymarketEarlyBirdClient();
   await client.init();
 }
@@ -70,8 +69,8 @@ for (const market of markets) {
     `[${market.title ?? market.conditionId}] conditionId: ${market.conditionId}`,
   );
 
-  if (!shouldRedeem) {
-    console.log(`  ${isDryRun ? "DRY RUN" : "SIM"} — skipping tx\n`);
+  if (isDryRun) {
+    console.log(`  DRY RUN — skipping tx\n`);
     continue;
   }
 

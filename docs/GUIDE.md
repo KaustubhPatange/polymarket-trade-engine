@@ -670,16 +670,15 @@ The redeem script fetches all currently redeemable positions for your proxy wall
 
 ```bash
 # Check what positions are redeemable (no transactions sent)
-bun scripts/redeem.ts --dry-run --prod
+bun scripts/redeem.ts --dry-run
 
 # Redeem all resolved positions on-chain
-bun scripts/redeem.ts --prod
+bun scripts/redeem.ts
 ```
 
 | Flag | Description |
 |------|-------------|
-| `--prod` | Enable real on-chain redemption. Without this flag the script runs in sim mode and only prints what would be redeemed. |
-| `--dry-run` | Combined with `--prod`: prints redeemable positions without sending transactions. |
+| `--dry-run` | Prints redeemable positions without sending any transactions. |
 
 The script uses `POLY_FUNDER_ADDRESS` to look up positions and `BUILDER_KEY/SECRET/PASSPHRASE` to authenticate with the relayer. Both must be set in `.env`.
 
