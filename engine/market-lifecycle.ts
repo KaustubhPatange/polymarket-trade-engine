@@ -914,6 +914,7 @@ export class MarketLifecycle {
       }
       pnl += payout;
 
+      this._tracker.onResolution(held, payout);
       this._pnl = parseFloat(pnl.toFixed(4));
       this._log(
         `[${this.slug}] Resolved ${resolvedUp ? "UP" : "DOWN"}. PnL: ${this._pnl >= 0 ? "+" : ""}$${this._pnl.toFixed(2)}`,

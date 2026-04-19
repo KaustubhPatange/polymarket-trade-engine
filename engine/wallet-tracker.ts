@@ -131,4 +131,17 @@ export class WalletTracker {
     this._shares.set(tokenId, current + count);
   }
 
+  /** Called when a market resolves: credits USDC payout and clears held shares. */
+  onResolution(held: Map<string, number>, payout: number): void {
+    for (const [tokenId, shares] of held) {
+      if (shares > 0) this._shares.set(tokenId, 0);
+    }
+    if (payout > 0) {
+      this._balance += payout;
+      this._log(
+        `[wallet] resolution payout: +$${payout.toFixed(2)} | balance=$${this._balance.toFixed(2)}`,
+      );
+    }
+  }
+
 }
