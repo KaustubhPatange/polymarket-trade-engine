@@ -186,6 +186,8 @@ const xMin = allRemaining.length ? Math.floor(Math.min(...allRemaining)) : 0;
 type BtcPoint = {
   remaining: number;
   assetPrice: number;
+  coinbasePrice?: number;
+  binancePrice?: number;
   gap?: number;
   priceToBeat?: number;
 };
@@ -213,6 +215,8 @@ for (const e of entries) {
     btcPoints.push({
       remaining: _lastRemaining,
       assetPrice: e.assetPrice,
+      coinbasePrice: e.coinbasePrice ?? undefined,
+      binancePrice: e.binancePrice ?? undefined,
       gap: _lastMarketPrice?.gap,
       priceToBeat: _lastMarketPrice?.priceToBeat,
     });
@@ -235,10 +239,20 @@ const btcLineData = dedupedBtcPoints.map((p) => ({
   meta: {
     remaining: p.remaining,
     assetPrice: p.assetPrice,
+    coinbasePrice: p.coinbasePrice,
+    binancePrice: p.binancePrice,
     gap: p.gap,
     priceToBeat: p.priceToBeat,
   },
 }));
+
+const coinbaseLineData = dedupedBtcPoints
+  .filter((p) => p.coinbasePrice != null)
+  .map((p) => ({ x: p.remaining, y: p.coinbasePrice as number }));
+
+const binanceLineData = dedupedBtcPoints
+  .filter((p) => p.binancePrice != null)
+  .map((p) => ({ x: p.remaining, y: p.binancePrice as number }));
 
 const ptbLineData =
   priceToBeat != null && firstPtbPoint != null
@@ -358,9 +372,11 @@ const html = `<!DOCTYPE html>
     const orderData   = ${JSON.stringify(orderData)};
     const orderColors = ${JSON.stringify(orderColors)};
     const orderShapes = ${JSON.stringify(orderShapes)};
-    const btcLineData = ${JSON.stringify(btcLineData)};
-    const ptbLineData = ${JSON.stringify(ptbLineData)};
-    const priceToBeat = ${JSON.stringify(priceToBeat)};
+    const btcLineData      = ${JSON.stringify(btcLineData)};
+    const ptbLineData      = ${JSON.stringify(ptbLineData)};
+    const priceToBeat      = ${JSON.stringify(priceToBeat)};
+    const coinbaseLineData = ${JSON.stringify(coinbaseLineData)};
+    const binanceLineData  = ${JSON.stringify(binanceLineData)};
 
     const tooltip = document.getElementById("tooltip");
 
@@ -500,6 +516,30 @@ const html = `<!DOCTYPE html>
             pointHoverRadius: 0,
             order: 3,
           },
+          ...(coinbaseLineData.length ? [{
+            label: "Coinbase",
+            data: coinbaseLineData,
+            type: "line",
+            borderColor: "#a78bfa",
+            backgroundColor: "transparent",
+            borderWidth: 1.5,
+            borderDash: [3, 3],
+            pointRadius: 0,
+            pointHoverRadius: 0,
+            order: 4,
+          }] : []),
+          ...(binanceLineData.length ? [{
+            label: "Binance",
+            data: binanceLineData,
+            type: "line",
+            borderColor: "#fbbf24",
+            backgroundColor: "transparent",
+            borderWidth: 1.5,
+            borderDash: [3, 3],
+            pointRadius: 0,
+            pointHoverRadius: 0,
+            order: 5,
+          }] : []),
         ],
       },
       options: {
@@ -527,8 +567,10 @@ const html = `<!DOCTYPE html>
                 const m = item.raw?.meta;
                 if (!m) return [];
                 const lines = [];
-                if (m.priceToBeat != null) lines.push(\`Price to Beat: $\${m.priceToBeat.toLocaleString()}\`);
-                if (m.gap         != null) lines.push(\`Gap: \${m.gap >= 0 ? "+" : ""}\${m.gap.toFixed(2)}\`);
+                if (m.priceToBeat   != null) lines.push(\`Price to Beat: $\${m.priceToBeat.toLocaleString()}\`);
+                if (m.coinbasePrice != null) lines.push(\`Coinbase: $\${m.coinbasePrice.toLocaleString()}\`);
+                if (m.binancePrice  != null) lines.push(\`Binance: $\${m.binancePrice.toLocaleString()}\`);
+                if (m.gap           != null) lines.push(\`Gap: \${m.gap >= 0 ? "+" : ""}\${m.gap.toFixed(2)}\`);
                 return lines;
               },
             },
