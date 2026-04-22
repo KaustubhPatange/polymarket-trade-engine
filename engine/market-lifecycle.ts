@@ -364,16 +364,18 @@ export class MarketLifecycle {
 
     if (remaining <= 0) {
       // Slot expired — cancel whatever is left
-      this._log(
-        `[${this.slug}] Slot expired with ${pendingSells.length} unfilled SELL order(s) — cancelling`,
-        "yellow",
-      );
-      const response = await this._cancelOrders(
-        pendingSells.map((o) => o.orderId),
-      );
-      // Force-remove any not_canceled (slot is over, nothing we can do)
-      for (const id of Object.keys(response.not_canceled)) {
-        this._removePendingOrder(id);
+      if (pendingSells.length > 0) {
+        this._log(
+          `[${this.slug}] Slot expired with ${pendingSells.length} unfilled SELL order(s) — cancelling`,
+          "yellow",
+        );
+        const response = await this._cancelOrders(
+          pendingSells.map((o) => o.orderId),
+        );
+        // Force-remove any not_canceled (slot is over, nothing we can do)
+        for (const id of Object.keys(response.not_canceled)) {
+          this._removePendingOrder(id);
+        }
       }
       await this._waitForResolution();
       this._computePnl();
@@ -569,7 +571,7 @@ export class MarketLifecycle {
   }
 
   /**
-   * Places a FOK sell at the current best bid and retries on rejection until
+   * Places a GTC sell at the current best bid and retries on rejection until
    * the order fills or the slot ends. Each retry reads a fresh best bid so the
    * price tracks the market.
    */
