@@ -2,6 +2,12 @@ import { fetchWithRetry } from "../utils/fetch-retry";
 import { Env } from "../utils/config";
 import type { Slot } from "../utils/slot";
 
+const variantMap: Record<string, string> = {
+  "5m": "fiveminute",
+  "15m": "fifteen",
+};
+const variant = variantMap[Env.get("MARKET_WINDOW")] ?? "fiveminute";
+
 export type MarketData = {
   startTime: number;
   endTime: number;
@@ -60,7 +66,7 @@ export class APIQueue {
 
     const url = new URL("https://polymarket.com/api/crypto/crypto-price");
     url.searchParams.set("symbol", Env.getAssetConfig().apiSymbol);
-    url.searchParams.set("variant", "fiveminute");
+    url.searchParams.set("variant", variant);
     url.searchParams.set("eventStartTime", startTime.toString());
     url.searchParams.set("endDate", endTime.toString());
 
@@ -69,13 +75,22 @@ export class APIQueue {
       // The API now requires TLSv1.3 with mlkem768x25519 which is only available
       // in latest curl 8.19.0. Bun or Node is compiled with latest BoringSSL
       // which causes ECONNRESET.
-      useCurl: false,
+      useCurl: true,
       totalRetry: Number.MAX_VALUE,
       abort: controller.signal,
       resolveWhen: async (res) => {
         const data = (await res.json()) as MarketData;
         if (data.openPrice) this.marketResult.set(slot.startTime, data);
         if (!data.closePrice) throw new Error("Close price not set");
+      },
+      onError: (e: unknown) => {
+        const code = (e as any)?.code;
+        if (code === "ECONNRESET") {
+          console.error(
+            "\n[fatal] ECONNRESET on crypto-price API — flip useCurl to true in queueMarketPrice() to fix it.\n",
+          );
+          process.exit(1);
+        }
       },
       retryBackOff: (currentRetry) => {
         // market data is set delay by 5s

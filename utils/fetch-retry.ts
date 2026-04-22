@@ -46,6 +46,8 @@ export async function fetchWithRetry<T = Response>(
     _currentRetry?: number;
     useCurl?: boolean;
     abort?: AbortSignal;
+    /** Called on every fetch error before retrying. Throw or call process.exit() to abort. */
+    onError?: (err: unknown) => void;
   },
 ): Promise<T> {
   function sleep(millis: number) {
@@ -60,7 +62,11 @@ export async function fetchWithRetry<T = Response>(
 
   try {
     const res = _params.useCurl
-      ? await curlFetch(url, _params.options?.headers as Record<string, string>, _params.abort)
+      ? await curlFetch(
+          url,
+          _params.options?.headers as Record<string, string>,
+          _params.abort,
+        )
       : await fetch(url, _params.options);
     if (!res.ok) {
       const obj = await res.text();
@@ -75,6 +81,9 @@ export async function fetchWithRetry<T = Response>(
     // do not retry on abort
     if (e instanceof DOMException && e.name === "AbortError")
       return undefined as T;
+
+    // caller-supplied error hook (may call process.exit or throw to stop retrying)
+    if (params?.onError) params.onError(e);
 
     // retry
     if (retryTimes - currentRetry <= 0) throw e;
