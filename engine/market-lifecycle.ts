@@ -684,11 +684,21 @@ export class MarketLifecycle {
           return ok;
         });
         if (remaining.length === 0) {
-          if (retryCount === 0) {
-            // log if balance too low, take 0 item assuming all item kinds are same from postOrder
+          if (retryCount >= maxRetries) {
             const kind = retryNext[0]!.req.action === "buy" ? "buy" : "sell";
             this._log(
-              `[${this.slug}] Retry stopped: wallet balance too low to place ${kind}`,
+              `[${this.slug}] Giving up: wallet balance too low to place ${kind} after ${retryCount} attempt(s)`,
+              "red",
+            );
+            for (const item of retryNext) {
+              if (item.onFailed) item.onFailed("wallet balance too low");
+            }
+            break;
+          }
+          if (retryCount === 0 || retryCount % 5 === 0) {
+            const kind = retryNext[0]!.req.action === "buy" ? "buy" : "sell";
+            this._log(
+              `[${this.slug}] Balance too low to place ${kind} — waiting for funds (attempt ${retryCount + 1})`,
               "yellow",
             );
           }
