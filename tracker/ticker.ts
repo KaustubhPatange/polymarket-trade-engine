@@ -42,16 +42,16 @@ export class TickerTracker {
 
   // True when Coinbase drops vs Binance by more than 0.15% — whale dump signal.
   get isWhaleDump(): boolean {
-    if (!this.price || !this.coinbaseValue) return false;
+    if (!this.binanceValue || !this.coinbaseValue) return false;
     return (
-      Math.abs(this.coinbaseValue - this.price) >
-      this.price * WHALE_DUMP_THRESHOLD_PCT
+      Math.abs(this.coinbaseValue - this.binanceValue) >
+      this.binanceValue * WHALE_DUMP_THRESHOLD_PCT
     );
   }
 
   get divergence(): number | null {
-    if (!this.price || !this.coinbaseValue) return null;
-    return Math.abs(this.coinbaseValue - this.price);
+    if (!this.binanceValue || !this.coinbaseValue) return null;
+    return Math.abs(this.coinbaseValue - this.binanceValue);
   }
 
   /** Resolves once every stream configured in TICKER has received its first price. */
