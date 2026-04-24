@@ -74,7 +74,7 @@ Reversal only appears when a previously large gap has been **consistently shrink
 
 ## ATR (Average True Range)
 
-**File:** `tracker/atr.ts`
+**File:** `engine/strategy/late-entry.ts` (inlined)
 
 ### What it measures
 
@@ -169,7 +169,7 @@ Both ATR and RTV measure BTC volatility per second, but:
 
 ## PGR (Peak Gap Ratio)
 
-**File:** `late-entry/indicators.ts`
+**File:** `engine/strategy/late-entry.ts` (inlined)
 
 ### What it measures
 
