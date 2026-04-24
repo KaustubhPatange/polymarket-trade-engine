@@ -195,6 +195,7 @@ export class EarlyBirdSimClient implements EarlyBirdClient {
       if (isSimFilled(order, book)) {
         this._orders.set(order.id, {
           ...order,
+          status: "filled",
         });
         if (order.action === "buy") {
           this._balanceReadyAt.set(
