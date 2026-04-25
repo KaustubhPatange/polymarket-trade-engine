@@ -7,7 +7,9 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "prettier": "^3.8.1"
+    "@types/sinon": "^21.0.1",
+    "prettier": "^3.8.1",
+    "sinon": "^21.1.2"
   },
   "peerDependencies": {
     "typescript": "^5"

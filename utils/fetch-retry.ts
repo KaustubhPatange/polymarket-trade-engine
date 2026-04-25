@@ -1,4 +1,9 @@
-const HOMEBREW_CURL = "/opt/homebrew/opt/curl/bin/curl";
+const CURL =
+  process.platform === "darwin"
+    ? "/opt/homebrew/opt/curl/bin/curl"
+    : process.platform === "win32"
+      ? "C:\\Windows\\System32\\curl.exe"
+      : "/usr/bin/curl";
 
 async function curlFetch(
   url: string | URL,
@@ -11,7 +16,7 @@ async function curlFetch(
   }
   args.push(url.toString());
 
-  const proc = Bun.spawn([HOMEBREW_CURL, ...args], {
+  const proc = Bun.spawn([CURL, ...args], {
     stdout: "pipe",
     stderr: "pipe",
   });

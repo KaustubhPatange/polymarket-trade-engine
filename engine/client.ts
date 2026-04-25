@@ -35,8 +35,9 @@ const CTF_REDEEM_ABI = [
 ] as const;
 
 function simulateDelay() {
-  const ms = 150 + Math.random() * 10; // 150–160ms
-  return new Promise((r) => setTimeout(r, ms));
+  const ms = parseInt(process.env.SIM_DELAY_MS ?? "", 10);
+  const delay = isNaN(ms) ? 150 + Math.random() * 10 : ms; // default 150–160ms
+  return new Promise((r) => setTimeout(r, delay));
 }
 
 export type MultiOrderRequest = {
@@ -110,7 +111,7 @@ function isSimFilled(
 }
 
 /** How long after a buy fills before the sim allows sells on that token. */
-const SIM_BALANCE_DELAY_MS = 4000;
+const SIM_BALANCE_DELAY_MS = parseInt(process.env.SIM_BALANCE_DELAY_MS ?? "4000", 10);
 
 export class EarlyBirdSimClient implements EarlyBirdClient {
   private _orders = new Map<string, Order>();

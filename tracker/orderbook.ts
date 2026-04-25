@@ -2,7 +2,7 @@ import { PriceLevelMap } from "../utils/price-level-map.ts";
 import { renderOrderBookTable } from "../utils/orderbook-table.ts";
 import { Env } from "../utils/config.ts";
 
-const WS_URL = "wss://ws-subscriptions-clob.polymarket.com/ws/market";
+const DEFAULT_WS_URL = "wss://ws-subscriptions-clob.polymarket.com/ws/market";
 
 type OrderLevel = { price: string; size: string };
 
@@ -46,10 +46,10 @@ type AssetBook = {
 
 export class OrderBook {
   private ws?: WebSocket;
-  private assetIds: string[] = ["", ""];
-  private books = new Map<string, AssetBook>();
-  private tickSizes = new Map<string, string>(); // tokenId -> tickSize
-  private feeRates = new Map<string, number>(); // tokenId -> feeRateBps
+  protected assetIds: string[] = ["", ""];
+  protected books = new Map<string, AssetBook>();
+  protected tickSizes = new Map<string, string>(); // tokenId -> tickSize
+  protected feeRates = new Map<string, number>(); // tokenId -> feeRateBps
 
   subscribe(clobTokenIds: string[]) {
     this.destroy();
@@ -58,7 +58,9 @@ export class OrderBook {
     this.tickSizes.clear();
     this.feeRates.clear();
 
-    this.ws = new WebSocket(WS_URL);
+    this.ws = new WebSocket(
+      process.env.ORDERBOOK_WS_URL ?? DEFAULT_WS_URL,
+    );
 
     this.ws.onopen = () => this.sendSubscription();
     this.ws.onmessage = (event) => this.handleMessage(event);

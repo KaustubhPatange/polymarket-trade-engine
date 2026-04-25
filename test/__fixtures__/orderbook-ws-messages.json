@@ -1,0 +1,101 @@
+{
+  "UP_ID": "up-token-id-001",
+  "DOWN_ID": "down-token-id-002",
+  "snapshot": [
+    {
+      "event_type": "book",
+      "asset_id": "up-token-id-001",
+      "tick_size": "0.01",
+      "bids": [
+        { "price": "0.50", "size": "88" },
+        { "price": "0.49", "size": "83" },
+        { "price": "0.48", "size": "153" },
+        { "price": "0.47", "size": "168" },
+        { "price": "0.46", "size": "125" },
+        { "price": "0.45", "size": "6381" }
+      ],
+      "asks": [
+        { "price": "0.51", "size": "955" },
+        { "price": "0.52", "size": "109" },
+        { "price": "0.53", "size": "116" },
+        { "price": "0.54", "size": "33" },
+        { "price": "0.55", "size": "351" },
+        { "price": "0.56", "size": "44630" }
+      ]
+    },
+    {
+      "event_type": "book",
+      "asset_id": "down-token-id-002",
+      "bids": [
+        { "price": "0.49", "size": "955" },
+        { "price": "0.48", "size": "109" },
+        { "price": "0.47", "size": "116" },
+        { "price": "0.46", "size": "33" },
+        { "price": "0.45", "size": "351" },
+        { "price": "0.44", "size": "6136" }
+      ],
+      "asks": [
+        { "price": "0.50", "size": "88" },
+        { "price": "0.51", "size": "83" },
+        { "price": "0.52", "size": "153" },
+        { "price": "0.53", "size": "168" },
+        { "price": "0.54", "size": "125" },
+        { "price": "0.55", "size": "46268" }
+      ]
+    }
+  ],
+  "priceChange": {
+    "event_type": "price_change",
+    "price_changes": [
+      {
+        "asset_id": "up-token-id-001",
+        "price": "0.54",
+        "size": "200",
+        "side": "BUY",
+        "best_bid": "0.54",
+        "best_ask": "0.51"
+      }
+    ]
+  },
+  "priceChangeAsk": {
+    "event_type": "price_change",
+    "price_changes": [
+      {
+        "asset_id": "up-token-id-001",
+        "price": "0.51",
+        "size": "99",
+        "side": "SELL",
+        "best_bid": "0.50",
+        "best_ask": "0.51"
+      }
+    ]
+  },
+  "priceChangeDelete": {
+    "event_type": "price_change",
+    "price_changes": [
+      {
+        "asset_id": "up-token-id-001",
+        "price": "0.50",
+        "size": "0",
+        "side": "BUY",
+        "best_bid": "0.49",
+        "best_ask": "0.51"
+      }
+    ]
+  },
+  "tickSizeChange": {
+    "event_type": "tick_size_change",
+    "asset_id": "up-token-id-001",
+    "new_tick_size": "0.001"
+  },
+  "lastTradePriceUp": {
+    "event_type": "last_trade_price",
+    "asset_id": "up-token-id-001",
+    "fee_rate_bps": "200"
+  },
+  "lastTradePriceDown": {
+    "event_type": "last_trade_price",
+    "asset_id": "down-token-id-002",
+    "fee_rate_bps": "1000"
+  }
+}

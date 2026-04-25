@@ -62,12 +62,14 @@ type MarketLifecycleOptions = {
   ticker: TickerTracker;
   recovery?: RecoveryOptions;
   alwaysLog?: boolean;
+  /** Optional OrderBook override (used in tests to inject SimOrderBook). */
+  orderBook?: OrderBook;
 };
 
 export class MarketLifecycle {
   private _state: LifecycleState = "INIT";
   private _ticking = false;
-  private _orderBook = new OrderBook();
+  private _orderBook: OrderBook;
 
   private _clobTokenIds: [string, string] | null = null;
   private _conditionId: string | null = null;
@@ -105,6 +107,7 @@ export class MarketLifecycle {
     this._tracker = opts.tracker;
     this._ticker = opts.ticker;
     this._alwaysLog = opts.alwaysLog ?? false;
+    this._orderBook = opts.orderBook ?? new OrderBook();
 
     const recovery = opts.recovery;
     if (recovery) {
@@ -241,7 +244,7 @@ export class MarketLifecycle {
       const tokenIds: string[] = JSON.parse(market.clobTokenIds);
       this._clobTokenIds = [tokenIds[0]!, tokenIds[1]!];
     }
-    this._feeRate ??= market.feeSchedule?.rate ?? 0;
+    this._feeRate = market.feeSchedule?.rate ?? 0;
   }
 
   private async _handleInit(): Promise<void> {
@@ -516,7 +519,7 @@ export class MarketLifecycle {
    * result to know if an order was placed. Use `onFilled` to react to a fill
    * and `onExpired` to react to a cancellation or failed placement.
    *
-   * Buys retry up to 30 times on balance errors; sells retry until slot end.
+   * Buys retry up to BUY_MAX_RETRIES times on balance errors; sells retry until slot end.
    */
   private _postOrders(requests: OrderRequest[]): void {
     const buys = requests.filter(
@@ -526,7 +529,10 @@ export class MarketLifecycle {
       (o) => o.req.action === "sell" && !this._sellBlocked,
     );
 
-    if (buys.length > 0) this._placeWithRetry(buys, 500, 30);
+    const maxRetries = parseInt(process.env.BUY_MAX_RETRIES ?? "30", 10);
+    const retryDelayMs = parseInt(process.env.BUY_RETRY_DELAY_MS ?? "500", 10);
+
+    if (buys.length > 0) this._placeWithRetry(buys, retryDelayMs, maxRetries);
     if (sells.length > 0) this._placeWithRetry(sells, 500, Infinity);
   }
 
@@ -694,6 +700,12 @@ export class MarketLifecycle {
           }
           remaining = retryNext;
           retryCount++;
+          if (retryCount >= maxRetries) {
+            for (const item of remaining) {
+              if (item.onFailed) item.onFailed("not enough balance");
+            }
+            break;
+          }
           await new Promise((r) => setTimeout(r, retryDelayMs));
           continue;
         }
@@ -873,7 +885,6 @@ export class MarketLifecycle {
   }
 
   private async _autoRedeem(): Promise<void> {
-    if (!Env.get("PROD")) return;
     if (!this._conditionId) return; // belt-and-suspenders
 
     this._log(`[${this.slug}] Redeeming positions...`, "dim");
