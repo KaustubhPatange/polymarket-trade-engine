@@ -660,8 +660,6 @@ When a market resolves, winning token holders must redeem their positions on-cha
 
 When a lifecycle completes and transitions to DONE, the engine automatically calls `redeemPositions` on-chain for the resolved market — but only in production mode (`PROD=true`) and only when the lifecycle went through `_waitForResolution` (i.e. the strategy held a position to market close rather than selling it).
 
-This is used by the `buy-high` strategy, which buys at 0.98/0.99 and holds to resolution without placing any sell orders.
-
 Redemption uses Polymarket's gasless relayer (`relayer-v2.polymarket.com`), so no MATIC is required. If redemption fails (e.g. already redeemed, network error), the error is logged and the lifecycle still transitions to DONE — it does not block shutdown.
 
 ### Batch Redeem Script (scripts/redeem.ts)
