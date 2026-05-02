@@ -2,7 +2,7 @@ export type MarketWindow = "5m" | "15m";
 export type MarketAsset = "btc" | "eth" | "xrp" | "sol" | "doge";
 
 export type Config = {
-  TICKER: ("polymarket" | "binance" | "coinbase")[];
+  TICKER: ("polymarket" | "binance" | "coinbase" | "okx" | "bybit")[];
   MARKET_WINDOW: MarketWindow;
   MARKET_ASSET: MarketAsset;
   PROD: boolean;
@@ -21,6 +21,8 @@ const ASSET_TICKER_MAP: Record<
     coinbaseProduct: string;
     polymarketSymbol: string;
     apiSymbol: string;
+    okxInstId: string;
+    bybitSymbol: string;
   }
 > = {
   btc: {
@@ -29,6 +31,8 @@ const ASSET_TICKER_MAP: Record<
     coinbaseProduct: "BTC-USD",
     polymarketSymbol: "btc/usd",
     apiSymbol: "BTC",
+    okxInstId: "BTC-USD",
+    bybitSymbol: "BTCUSDT",
   },
   eth: {
     slugPrefix: "eth",
@@ -36,6 +40,8 @@ const ASSET_TICKER_MAP: Record<
     coinbaseProduct: "ETH-USD",
     polymarketSymbol: "eth/usd",
     apiSymbol: "ETH",
+    okxInstId: "ETH-USD",
+    bybitSymbol: "ETHUSDT",
   },
   xrp: {
     slugPrefix: "xrp",
@@ -43,6 +49,8 @@ const ASSET_TICKER_MAP: Record<
     coinbaseProduct: "XRP-USD",
     polymarketSymbol: "xrp/usd",
     apiSymbol: "XRP",
+    okxInstId: "XRP-USD",
+    bybitSymbol: "XRPUSDT",
   },
   sol: {
     slugPrefix: "sol",
@@ -50,6 +58,8 @@ const ASSET_TICKER_MAP: Record<
     coinbaseProduct: "SOL-USD",
     polymarketSymbol: "sol/usd",
     apiSymbol: "SOL",
+    okxInstId: "SOL-USD",
+    bybitSymbol: "SOLUSDT",
   },
   doge: {
     slugPrefix: "doge",
@@ -57,6 +67,8 @@ const ASSET_TICKER_MAP: Record<
     coinbaseProduct: "DOGE-USD",
     polymarketSymbol: "doge/usd",
     apiSymbol: "DOGE",
+    okxInstId: "DOGE-USD",
+    bybitSymbol: "DOGEUSDT",
   },
 };
 

@@ -295,6 +295,8 @@ export class MarketLifecycle {
       assetPrice: this._ticker.price,
       binancePrice: this._ticker.binancePrice,
       coinbasePrice: this._ticker.coinbasePrice,
+      okxPrice: this._ticker.okxPrice,
+      bybitPrice: this._ticker.bybitPrice,
       divergence: this._ticker.divergence,
     }));
     this._marketLogger.setMarketResultProvider(() => {
@@ -530,9 +532,9 @@ export class MarketLifecycle {
 
     if (canceledSells.length === 0) return;
 
-    for (const sell of canceledSells) {
-      this._emergencySellLoop(sell);
-    }
+    await Promise.all(
+      canceledSells.map((sell) => this._emergencySellLoop(sell)),
+    );
   }
 
   /**
@@ -540,9 +542,9 @@ export class MarketLifecycle {
    * the order fills or the slot ends. Each retry reads a fresh best bid so the
    * price tracks the market.
    */
-  private _emergencySellLoop(sell: PendingOrder): void {
+  private async _emergencySellLoop(sell: PendingOrder): Promise<void> {
     this._inFlight++;
-    (async () => {
+    return (async () => {
       while (Date.now() < this.slotEndMs) {
         const side = sell.tokenId === this._clobTokenIds![0] ? "UP" : "DOWN";
         const bestBid =

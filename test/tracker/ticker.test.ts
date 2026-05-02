@@ -84,6 +84,32 @@ describe("TickerTracker", () => {
     expect(tracker.isWhaleDump).toBe(false); // 60 < 150 (0.15% of 100k)
   });
 
+  test.skipIf(isCI)(
+    "OKX ticker streams a price",
+    async () => {
+      process.env.TICKER = "okx";
+      tracker = new TickerTracker();
+      tracker.schedule();
+      await tracker.waitForReady();
+      expect(tracker.okxPrice).toBeGreaterThan(0);
+      expect(Number.isFinite(tracker.okxPrice!)).toBe(true);
+    },
+    15_000,
+  );
+
+  test.skipIf(isCI)(
+    "ByBit ticker streams a price",
+    async () => {
+      process.env.TICKER = "bybit";
+      tracker = new TickerTracker();
+      tracker.schedule();
+      await tracker.waitForReady();
+      expect(tracker.bybitPrice).toBeGreaterThan(0);
+      expect(Number.isFinite(tracker.bybitPrice!)).toBe(true);
+    },
+    15_000,
+  );
+
   test(
     "Polymarket ticker streams a price",
     async () => {

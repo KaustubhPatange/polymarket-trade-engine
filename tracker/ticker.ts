@@ -5,6 +5,9 @@ import {
 } from "../utils/reconnecting-ws";
 
 const COINBASE_WS_URL = "wss://ws-feed.exchange.coinbase.com";
+const OKX_WS_URL = "wss://wspri.okx.com:8443/ws/v5/ipublic";
+const BYBIT_WS_URL = "wss://stream.bybit.com/v5/public/spot";
+const PING_INTERVAL_MS = 15_000;
 
 // Maximum acceptable lag between Binance event time and current time
 const MAX_STALENESS_MS = 1000; // 1 second
@@ -17,9 +20,15 @@ export class TickerTracker {
   private polymarketWs?: ReconnectingWs;
   private binanceWs?: ReconnectingWs;
   private coinbaseWs?: ReconnectingWs;
+  private okxWs?: ReconnectingWs;
+  private bybitWs?: ReconnectingWs;
   private polymarketValue?: number;
   private binanceValue?: number;
   private coinbaseValue?: number;
+  private okxValue?: number;
+  private bybitValue?: number;
+  private okxPingInterval?: ReturnType<typeof setInterval>;
+  private bybitPingInterval?: ReturnType<typeof setInterval>;
   private validated = false;
 
   get price() {
@@ -32,6 +41,14 @@ export class TickerTracker {
 
   get binancePrice() {
     return this.binanceValue;
+  }
+
+  get okxPrice() {
+    return this.okxValue;
+  }
+
+  get bybitPrice() {
+    return this.bybitValue;
   }
 
   // True when Binance/Coinbase diverge by more than $50 — market is structurally broken.
@@ -64,7 +81,9 @@ export class TickerTracker {
         (streams.indexOf("binance") === -1 ||
           this.binanceValue !== undefined) &&
         (streams.indexOf("coinbase") === -1 ||
-          this.coinbaseValue !== undefined);
+          this.coinbaseValue !== undefined) &&
+        (streams.indexOf("okx") === -1 || this.okxValue !== undefined) &&
+        (streams.indexOf("bybit") === -1 || this.bybitValue !== undefined);
       if (isReady()) {
         resolve();
         return;
@@ -91,6 +110,12 @@ export class TickerTracker {
     }
     if (streams.indexOf("coinbase") != -1) {
       this.connectCoinbase();
+    }
+    if (streams.indexOf("okx") != -1) {
+      this.connectOkx();
+    }
+    if (streams.indexOf("bybit") != -1) {
+      this.connectBybit();
     }
   }
 
@@ -205,12 +230,67 @@ export class TickerTracker {
     });
   }
 
+  private connectOkx() {
+    const { okxInstId } = Env.getAssetConfig();
+    this.okxWs = createReconnectingWs({
+      url: OKX_WS_URL,
+      label: "OKX",
+      onopen: (ws) => {
+        ws.send(
+          JSON.stringify({
+            op: "subscribe",
+            args: [{ channel: "tickers", instId: okxInstId }],
+          }),
+        );
+        this.okxPingInterval = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) ws.send("ping");
+        }, PING_INTERVAL_MS);
+      },
+      onmessage: (event) => {
+        if (!event.data || event.data === "pong") return;
+        const json = JSON.parse(event.data as string);
+        const price = parseFloat(json.data?.[0]?.last);
+        if (!price) return;
+        this.okxValue = price;
+      },
+      onerror: (err) => console.error("OKX WS error:", err),
+    });
+  }
+
+  private connectBybit() {
+    const { bybitSymbol } = Env.getAssetConfig();
+    this.bybitWs = createReconnectingWs({
+      url: BYBIT_WS_URL,
+      label: "ByBit",
+      onopen: (ws) => {
+        ws.send(
+          JSON.stringify({ op: "subscribe", args: [`tickers.${bybitSymbol}`] }),
+        );
+        this.bybitPingInterval = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) ws.send("ping");
+        }, PING_INTERVAL_MS);
+      },
+      onmessage: (event) => {
+        if (!event.data || event.data === "pong") return;
+        const json = JSON.parse(event.data as string);
+        const price = parseFloat(json.data?.lastPrice);
+        if (!price) return;
+        this.bybitValue = price;
+      },
+      onerror: (err) => console.error("ByBit WS error:", err),
+    });
+  }
+
   format(): string | null {
     const parts: string[] = [];
     if (this.binanceValue !== undefined)
       parts.push(`Binance: $${this.binanceValue.toLocaleString()}`);
     if (this.coinbaseValue !== undefined)
       parts.push(`Coinbase: $${this.coinbaseValue.toLocaleString()}`);
+    if (this.okxValue !== undefined)
+      parts.push(`OKX: $${this.okxValue.toLocaleString()}`);
+    if (this.bybitValue !== undefined)
+      parts.push(`ByBit: $${this.bybitValue.toLocaleString()}`);
     if (this.divergence !== null)
       parts.push(`Divergence: $${this.divergence.toFixed(2)}`);
     if (this.isWhaleDump) parts.push(`\x1b[31mWhale Dump\x1b[0m`);
@@ -224,5 +304,13 @@ export class TickerTracker {
     this.binanceWs = undefined;
     this.coinbaseWs?.destroy();
     this.coinbaseWs = undefined;
+    clearInterval(this.okxPingInterval);
+    this.okxPingInterval = undefined;
+    this.okxWs?.destroy();
+    this.okxWs = undefined;
+    clearInterval(this.bybitPingInterval);
+    this.bybitPingInterval = undefined;
+    this.bybitWs?.destroy();
+    this.bybitWs = undefined;
   }
 }

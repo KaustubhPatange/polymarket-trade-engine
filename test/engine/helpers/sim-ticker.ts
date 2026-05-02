@@ -6,6 +6,8 @@ export class SimTickerTracker {
   private _price: number | undefined;
   private _binancePrice: number | undefined;
   private _coinbasePrice: number | undefined;
+  private _okxPrice: number | undefined;
+  private _bybitPrice: number | undefined;
   private _divergence: number | null = null;
 
   get price() {
@@ -18,6 +20,14 @@ export class SimTickerTracker {
 
   get coinbasePrice() {
     return this._coinbasePrice;
+  }
+
+  get okxPrice() {
+    return this._okxPrice;
+  }
+
+  get bybitPrice() {
+    return this._bybitPrice;
   }
 
   get divergence(): number | null {
@@ -36,11 +46,15 @@ export class SimTickerTracker {
     assetPrice: number;
     binancePrice: number;
     coinbasePrice: number;
+    okxPrice?: number;
+    bybitPrice?: number;
     divergence: number;
   }): void {
     this._price = event.assetPrice;
     this._binancePrice = event.binancePrice;
     this._coinbasePrice = event.coinbasePrice;
+    this._okxPrice = event.okxPrice;
+    this._bybitPrice = event.bybitPrice;
     this._divergence = event.divergence;
   }
 

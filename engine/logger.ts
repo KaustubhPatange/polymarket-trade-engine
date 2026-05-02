@@ -55,6 +55,8 @@ export class Logger {
         assetPrice?: number;
         binancePrice?: number;
         coinbasePrice?: number;
+        okxPrice?: number;
+        bybitPrice?: number;
         divergence?: number | null;
       })
     | null = null;
@@ -82,6 +84,8 @@ export class Logger {
       assetPrice?: number;
       binancePrice?: number;
       coinbasePrice?: number;
+      okxPrice?: number;
+      bybitPrice?: number;
       divergence?: number | null;
     },
   ) {

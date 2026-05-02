@@ -188,6 +188,8 @@ type BtcPoint = {
   assetPrice: number;
   coinbasePrice?: number;
   binancePrice?: number;
+  okxPrice?: number;
+  bybitPrice?: number;
   gap?: number;
   priceToBeat?: number;
 };
@@ -217,6 +219,8 @@ for (const e of entries) {
       assetPrice: e.assetPrice,
       coinbasePrice: e.coinbasePrice ?? undefined,
       binancePrice: e.binancePrice ?? undefined,
+      okxPrice: e.okxPrice ?? undefined,
+      bybitPrice: e.bybitPrice ?? undefined,
       gap: _lastMarketPrice?.gap,
       priceToBeat: _lastMarketPrice?.priceToBeat,
     });
@@ -241,6 +245,8 @@ const btcLineData = dedupedBtcPoints.map((p) => ({
     assetPrice: p.assetPrice,
     coinbasePrice: p.coinbasePrice,
     binancePrice: p.binancePrice,
+    okxPrice: p.okxPrice,
+    bybitPrice: p.bybitPrice,
     gap: p.gap,
     priceToBeat: p.priceToBeat,
   },
@@ -253,6 +259,14 @@ const coinbaseLineData = dedupedBtcPoints
 const binanceLineData = dedupedBtcPoints
   .filter((p) => p.binancePrice != null)
   .map((p) => ({ x: p.remaining, y: p.binancePrice as number }));
+
+const okxLineData = dedupedBtcPoints
+  .filter((p) => p.okxPrice != null)
+  .map((p) => ({ x: p.remaining, y: p.okxPrice as number }));
+
+const bybitLineData = dedupedBtcPoints
+  .filter((p) => p.bybitPrice != null)
+  .map((p) => ({ x: p.remaining, y: p.bybitPrice as number }));
 
 const ptbLineData =
   priceToBeat != null && firstPtbPoint != null
@@ -406,6 +420,8 @@ const html = `<!DOCTYPE html>
     const ptbStartRemaining = ${JSON.stringify(firstPtbPoint?.remaining ?? null)};
     const coinbaseLineData = ${JSON.stringify(coinbaseLineData)};
     const binanceLineData  = ${JSON.stringify(binanceLineData)};
+    const okxLineData      = ${JSON.stringify(okxLineData)};
+    const bybitLineData    = ${JSON.stringify(bybitLineData)};
 
     const tooltip = document.getElementById("tooltip");
 
@@ -569,6 +585,30 @@ const html = `<!DOCTYPE html>
             pointHoverRadius: 0,
             order: 5,
           }] : []),
+          ...(okxLineData.length ? [{
+            label: "OKX",
+            data: okxLineData,
+            type: "line",
+            borderColor: "#34d399",
+            backgroundColor: "transparent",
+            borderWidth: 1.5,
+            borderDash: [3, 3],
+            pointRadius: 0,
+            pointHoverRadius: 0,
+            order: 6,
+          }] : []),
+          ...(bybitLineData.length ? [{
+            label: "ByBit",
+            data: bybitLineData,
+            type: "line",
+            borderColor: "#f472b6",
+            backgroundColor: "transparent",
+            borderWidth: 1.5,
+            borderDash: [3, 3],
+            pointRadius: 0,
+            pointHoverRadius: 0,
+            order: 7,
+          }] : []),
         ],
       },
       options: {
@@ -599,6 +639,8 @@ const html = `<!DOCTYPE html>
                 if (m.priceToBeat   != null) lines.push(\`Price to Beat: $\${m.priceToBeat.toLocaleString()}\`);
                 if (m.coinbasePrice != null) lines.push(\`Coinbase: $\${m.coinbasePrice.toLocaleString()}\`);
                 if (m.binancePrice  != null) lines.push(\`Binance: $\${m.binancePrice.toLocaleString()}\`);
+                if (m.okxPrice      != null) lines.push(\`OKX: $\${m.okxPrice.toLocaleString()}\`);
+                if (m.bybitPrice    != null) lines.push(\`ByBit: $\${m.bybitPrice.toLocaleString()}\`);
                 if (m.gap           != null) lines.push(\`Gap: \${m.gap >= 0 ? "+" : ""}\${m.gap.toFixed(2)}\`);
                 return lines;
               },

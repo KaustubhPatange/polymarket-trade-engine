@@ -706,3 +706,85 @@ describe("Test 12: emergencySells fills despite 4s MINED delay", () => {
     TEST_TIMEOUT,
   );
 });
+
+// ---------------------------------------------------------------------------
+// Test 13: emergencySells promise resolves only after all sells fill
+// ---------------------------------------------------------------------------
+
+describe("Test 13: emergencySells promise awaits all loops", () => {
+  let runner: FixtureRunner;
+  let resolvedAt: number | null = null;
+  let pendingWhenResolved: number | null = null;
+
+  beforeEach(async () => {
+    runner = new FixtureRunner();
+    resolvedAt = null;
+    pendingWhenResolved = null;
+
+    await runner.setup(async (ctx) => {
+      const release = ctx.hold();
+
+      ctx.postOrders([
+        {
+          req: { tokenId: DOWN_TOKEN, action: "buy", price: 0.5, shares: 6 },
+          expireAtMs: SLOT_END_MS,
+          onFilled: (boughtShares) => {
+            // Park sell at 0.99 — won't fill at any DOWN bid in the fixture.
+            ctx.postOrders([
+              {
+                req: {
+                  tokenId: DOWN_TOKEN,
+                  action: "sell",
+                  price: 0.99,
+                  shares: boughtShares,
+                },
+                expireAtMs: SLOT_END_MS,
+              },
+            ]);
+
+            setTimeout(() => {
+              const sellIds = ctx.pendingOrders
+                .filter((o) => o.action === "sell")
+                .map((o) => o.orderId);
+              void ctx.emergencySells(sellIds).then(() => {
+                resolvedAt = Date.now();
+                pendingWhenResolved = ctx.pendingOrders.filter(
+                  (o) => o.action === "sell",
+                ).length;
+                release();
+              });
+            }, 500);
+          },
+        },
+      ]);
+    });
+  });
+
+  afterEach(() => runner.teardown());
+
+  test(
+    "promise stays pending until the re-priced sell fills",
+    async () => {
+      // Buy fills; emergencySells fires at +600ms; parked 0.99 sell is cancelled
+      // and the loop re-prices to the live bid. While the loop is mid-flight,
+      // pendingOrders still contains the re-priced sell — promise must not have
+      // resolved yet.
+      await runner.advanceTo(LOG_START_TS + 700);
+      expect(resolvedAt).toBeNull();
+
+      // Advance enough for the re-priced sell to fill.
+      await runner.advanceTo(LOG_START_TS + 10_000);
+
+      expect(resolvedAt).not.toBeNull();
+      // No sells should be pending when the promise resolved — proves it waited.
+      expect(pendingWhenResolved).toBe(0);
+
+      const sellHistory = runner.lifecycle.orderHistory.filter(
+        (o) => o.action === "sell",
+      );
+      expect(sellHistory).toHaveLength(1);
+      expect(sellHistory[0]!.shares).toBe(6);
+    },
+    TEST_TIMEOUT,
+  );
+});

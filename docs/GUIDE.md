@@ -90,7 +90,7 @@ When `--prod` is confirmed, `process.env.PROD` is set to `"true"` so that strate
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
-| `TICKER` | comma-separated list | `polymarket,coinbase` | Price sources for the asset ticker. Valid values: `polymarket`, `binance`, `coinbase`. |
+| `TICKER` | comma-separated list | `polymarket,coinbase` | Price sources for the asset ticker. Valid values: `polymarket`, `binance`, `coinbase`, `okx`, `bybit`. |
 | `MARKET_ASSET` | string | `"btc"` | Asset to trade. Valid values: `btc`, `eth`, `xrp`, `sol`, `doge`. |
 | `MARKET_WINDOW` | string | `"5m"` | Market window duration. `"5m"` for 5-minute markets, `"15m"` for 15-minute markets. Set before starting the engine -- cannot be changed while running. |
 | `PROD` | boolean string | `"false"` | Set automatically by `--prod`. Do not set manually. |
@@ -104,7 +104,7 @@ When `--prod` is confirmed, `process.env.PROD` is set to `"true"` so that strate
 
 ```ts
 type Config = {
-  TICKER: ("polymarket" | "binance" | "coinbase")[];
+  TICKER: ("polymarket" | "binance" | "coinbase" | "okx" | "bybit")[];
   MARKET_WINDOW: "5m" | "15m";
   MARKET_ASSET: "btc" | "eth" | "xrp" | "sol" | "doge";
   PROD: boolean;
@@ -370,6 +370,8 @@ Live asset price tracker aggregating data from multiple sources.
 | `price` | `number \| undefined` | Current asset price aggregated across all configured sources. `undefined` if not yet available. |
 | `binancePrice` | `number \| undefined` | Raw asset price from Binance. `undefined` if Binance is not configured or not yet ready. |
 | `coinbasePrice` | `number \| undefined` | Raw asset price from Coinbase. `undefined` if Coinbase is not configured or not yet ready. |
+| `okxPrice` | `number \| undefined` | Raw asset price from OKX. `undefined` if OKX is not configured or not yet ready. |
+| `bybitPrice` | `number \| undefined` | Raw asset price from ByBit. `undefined` if ByBit is not configured or not yet ready. |
 | `divergence` | `number \| null` | Price divergence across configured sources. |
 
 ### PendingOrder
@@ -602,7 +604,7 @@ BUILDER_PASSPHRASE=...
 MARKET_ASSET=btc
 
 # Asset price sources. Comma-separated list of ticker providers.
-# Available: polymarket, binance, coinbase
+# Available: polymarket, binance, coinbase, okx, bybit
 TICKER=polymarket,coinbase
 
 # Maximum cumulative session loss (in USD) before auto-shutdown.
