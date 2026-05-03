@@ -1,6 +1,6 @@
 # polymarket-trade-engine
 
-Automated trading engine for Polymarket binary prediction markets (e.g. BTC Up/Down 5-minute), with a built-in strategy test harness.
+Automated trading engine for Polymarket binary prediction markets (e.g. BTC Up/Down 5-minute), with a built-in strategy test harness and an interactive run-analysis dashboard.
 
 - [**GUIDE.md**](docs/GUIDE.md) -- Strategy development guide covering CLI usage, configuration, engine architecture, and the full API reference.
 - [**LEARNING.md**](docs/LEARNING.md) -- Introduction to prediction markets, order books, bids, asks, and how Polymarket works under the hood.

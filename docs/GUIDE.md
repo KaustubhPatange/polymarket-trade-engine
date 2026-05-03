@@ -23,7 +23,7 @@ This document is the primary reference for developing strategies on the Polymark
 13. [Best Practices](#best-practices)
 14. [Production Setup](#production-setup)
 15. [Redemption](#redemption)
-16. [Debugging and Visualization](#debugging-and-visualization)
+16. [Debugging, Visualization, and Analysis](#debugging-visualization-and-analysis)
 
 ---
 
@@ -685,7 +685,7 @@ Run this script periodically (e.g. after each session) to ensure resolved positi
 
 ---
 
-## Debugging and Visualization
+## Debugging, Visualization, and Analysis
 
 ### Log Files
 
@@ -764,6 +764,49 @@ The chart is useful for answering questions such as:
 - Was the stop-loss triggered by a genuine price reversal or a momentary spike?
 - How volatile was the asset price in the seconds leading up to entry?
 - Did the market resolution match the gap direction at entry time?
+
+### Run Analysis Dashboard
+
+While `scripts/chart.ts` is great for inspecting a single market round, you'll quickly accumulate dozens or hundreds of log files across sessions, assets, and strategies. The **Run Analysis Dashboard** (in the `analysis/` directory) aggregates every log under `logs/` into one interactive page so you can see how a strategy is performing across time, drill into individual runs, and compare market behavior across windows.
+
+```bash
+cd analysis
+bun install
+bun run dev          # opens http://localhost:5173
+```
+
+The dashboard is a self-contained React + Vite app that reads logs at dev/build time via Vite's glob — no backend required. New `.log` files added under `logs/` are picked up on the next reload.
+
+![Run Analysis Dashboard](assets/analysis-dashboard.png)
+![Run Analysis Dashboard](assets/analysis-dashboard-2.png)
+
+**Three stacked panels:**
+
+1. **Market Runs (UP vs DOWN)** — Stacked bar chart showing the count of resolved markets per day or per hour, split by direction. Useful for sanity-checking that you're not over-indexing on one side.
+2. **Strategy Win Rate** — Stacked bar chart of wins (green) vs losses (red), filterable by strategy name. The side panel surfaces aggregate stats — total trades, total wins, total losses, total spend, profit (Σ pnl), win amount, loss amount — and switches to per-bin stats on hover.
+3. **Run Detail** — Pick any resolved run from the dropdown to render the full per-slug chart (the same view `scripts/chart.ts` produces, ported to React). All the orderbook + asset-price interactions are available: status filter toggles, zoom +/-/reset, scroll-wheel zoom, drag-pan, scrollbar, crosshair, simultaneous tooltips on both subcharts, fullscreen view.
+
+**Header controls (apply globally to all panels):**
+
+| Control | Description |
+|---------|-------------|
+| **Asset** chips | Filter all panels to a single asset: BTC / ETH / XRP / SOL / DOGE. Extracted from the slug prefix. |
+| **Market** chips | Filter to a single window duration: 5m / 15m. Extracted from the third slug segment. |
+| ⚙ Settings | Opens a popup with timezone and data-source options. |
+
+**Settings popup:**
+
+- **Timezone** — `Local` / `ET` / `UTC`. Applies to per-hour bin labels in the bar charts, the from/to dates in the side panels, and the run dropdown's date formatting. ET matches what Polymarket displays. Persisted in `localStorage`.
+- **Data Source** — `Default` (the bundled `logs/` directory) or `Custom directory…` (browser folder picker via `<input type="file" webkitdirectory>`, works in Firefox/Chrome/Edge/Safari). Custom is held in memory only — pick again per session. Useful for analyzing logs from a different machine or a separate run.
+
+**Per-card menu (•••):**
+
+Each of the three panels has a top-right menu with `View full screen`, `Rate: per day`, and `Rate: per hour`. Fullscreen expands the panel to fill the viewport (ESC or the close button to exit); the rate toggle re-bins the bar chart on the fly.
+
+**When to use this vs `scripts/chart.ts`:**
+
+- **`chart.ts`** when you want to deeply inspect a single round and don't need anything around it — it produces a self-contained HTML file you can share or archive.
+- **The dashboard** when you want to spot patterns across many rounds: which hours of the day perform best, whether a strategy's win rate is drifting, whether one asset is consistently more profitable than another. The dashboard's run-detail panel reuses the same visualization, so you can drill from aggregate down to individual round without leaving the page.
 
 ### Live Order Book Monitor
 
