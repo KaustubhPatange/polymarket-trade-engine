@@ -37,6 +37,7 @@ export class EarlyBird {
   private readonly _rounds: number | null; // null = unlimited
   private readonly _prod: boolean;
   private readonly _minSessionPnl: number;
+  private readonly _maxSessionProfit: number;
   private readonly _alwaysLog: boolean;
   private _roundsCreated = 0;
   private _tracker!: WalletTracker;
@@ -60,6 +61,7 @@ export class EarlyBird {
     this._slotOffset = slotOffset;
     this._alwaysLog = alwaysLog;
     this._minSessionPnl = parseFloat(process.env.MAX_SESSION_LOSS ?? "3");
+    this._maxSessionProfit = parseFloat(process.env.MAX_SESSION_PROFIT ?? "5");
     if (prod) {
       this._client = new PolymarketEarlyBirdClient();
     } else {
@@ -133,6 +135,9 @@ export class EarlyBird {
 
     log.write(
       `[startup] Min session PnL exit: $${this._minSessionPnl.toFixed(2)}`,
+    );
+    log.write(
+      `[startup] Max session profit exit: +$${this._maxSessionProfit.toFixed(2)}`,
     );
 
     const state = loadState(this._statePath);
@@ -261,6 +266,11 @@ export class EarlyBird {
       if (Math.abs(this._sessionLoss) >= this._minSessionPnl) {
         this._startShutdown(
           `Session loss limit reached (total losses: $${this._sessionLoss.toFixed(2)}, threshold: -$${this._minSessionPnl.toFixed(2)}).`,
+        );
+      }
+      if (this._sessionPnl >= this._maxSessionProfit) {
+        this._startShutdown(
+          `Session profit target reached (PnL: +$${this._sessionPnl.toFixed(2)}, target: +$${this._maxSessionProfit.toFixed(2)}).`,
         );
       }
     }

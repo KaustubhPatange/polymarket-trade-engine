@@ -548,7 +548,7 @@ export class MarketLifecycle {
       while (Date.now() < this.slotEndMs) {
         const side = sell.tokenId === this._clobTokenIds![0] ? "UP" : "DOWN";
         const bestBid =
-          this._orderBook.bestBidPrice(side as "UP" | "DOWN") ?? sell.price;
+          this._orderBook.bestBidPrice(side as "UP" | "DOWN") ?? 0.01;
 
         let filled = false;
         let failed = false;

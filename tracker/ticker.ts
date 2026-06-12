@@ -10,7 +10,7 @@ const BYBIT_WS_URL = "wss://stream.bybit.com/v5/public/spot";
 const PING_INTERVAL_MS = 15_000;
 
 // Maximum acceptable lag between Binance event time and current time
-const MAX_STALENESS_MS = 1000; // 1 second
+const MAX_STALENESS_MS = 30_000; // 30 seconds
 // Killswitch: abort trading if Binance/Coinbase diverge by more than $50 absolute
 const KILLSWITCH_THRESHOLD = 50.0;
 // Whale dump: Coinbase diverges from Binance by more than 0.15%
